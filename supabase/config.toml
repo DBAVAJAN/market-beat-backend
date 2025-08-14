@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.fetch-stock-data]
 verify_jwt = false
+
+[functions.api-stocks]
+verify_jwt = false
+
+[functions.api-stats]
+verify_jwt = false
