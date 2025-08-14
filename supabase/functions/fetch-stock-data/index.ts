@@ -38,15 +38,33 @@ async function fetchStockQuote(symbol: string, apiKey: string) {
   lastRequestTime = Date.now()
   
   try {
+    console.log(`🔄 Fetching ${symbol} from Finnhub API...`)
+    
     const response = await fetch(
       `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`
     )
     
     if (!response.ok) {
-      throw new Error(`Finnhub API error: ${response.status}`)
+      const errorText = await response.text()
+      console.error(`❌ Finnhub API error for ${symbol}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+      throw new Error(`Finnhub API error: ${response.status} - ${response.statusText}`)
     }
     
     const data = await response.json()
+    
+    // Validate required fields
+    if (!data.c || data.c === 0) {
+      console.warn(`⚠️ Invalid data for ${symbol}:`, data)
+      return null
+    }
+    
+    console.log(`✅ ${symbol}: ₹${data.c} (${data.dp > 0 ? '+' : ''}${data.dp}%)`)
+    
     return {
       symbol,
       current: data.c,
@@ -54,10 +72,15 @@ async function fetchStockQuote(symbol: string, apiKey: string) {
       low: data.l,
       open: data.o,
       previousClose: data.pc,
-      timestamp: data.t
+      timestamp: data.t,
+      changePercent: data.dp
     }
   } catch (error) {
-    console.error(`Error fetching ${symbol}:`, error)
+    console.error(`💥 Error fetching ${symbol}:`, {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    })
     return null
   }
 }
@@ -78,7 +101,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Fetching real-time data for', stockSymbols.length, 'stocks')
+    console.log('🚀 Starting real-time data fetch for', stockSymbols.length, 'Indian stocks')
 
     // Get company IDs from database
     const { data: companies, error: companiesError } = await supabase
@@ -86,11 +109,15 @@ Deno.serve(async (req) => {
       .select('id, symbol')
 
     if (companiesError) {
+      console.error('❌ Database error fetching companies:', companiesError)
       throw companiesError
     }
 
+    console.log(`📊 Found ${companies.length} companies in database`)
+
     const companyMap = new Map(companies.map(c => [c.symbol, c.id]))
     const stockDataToInsert = []
+    const failedStocks = []
     
     // Fetch data for each stock with rate limiting
     for (const symbol of stockSymbols) {
@@ -111,13 +138,20 @@ Deno.serve(async (req) => {
           volume: Math.floor(Math.random() * (5000000 - 200000) + 200000) // Finnhub free tier doesn't include volume for NSE
         })
         
-        console.log(`✓ ${symbol}: ₹${quote.current}`)
       } else {
-        console.log(`✗ Failed to fetch ${symbol}`)
+        failedStocks.push(symbol)
+        console.log(`❌ Failed to fetch ${symbol}`)
       }
     }
 
+    console.log(`📈 Successfully fetched: ${stockDataToInsert.length}/${stockSymbols.length} stocks`)
+    if (failedStocks.length > 0) {
+      console.warn(`⚠️ Failed stocks: ${failedStocks.join(', ')}`)
+    }
+
     if (stockDataToInsert.length > 0) {
+      console.log('💾 Updating database with new stock data...')
+      
       // Upsert today's data
       const { error: insertError } = await supabase
         .from('stock_data')
@@ -127,15 +161,22 @@ Deno.serve(async (req) => {
         })
 
       if (insertError) {
+        console.error('❌ Database insert error:', insertError)
         throw insertError
       }
+      
+      console.log('✅ Database updated successfully')
+    } else {
+      console.warn('⚠️ No valid stock data to insert')
     }
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: `Updated ${stockDataToInsert.length} stocks with real-time data`,
+        message: `Updated ${stockDataToInsert.length}/${stockSymbols.length} stocks with real-time data`,
         updated: stockDataToInsert.length,
+        failed: failedStocks.length,
+        failedStocks: failedStocks,
         timestamp: new Date().toISOString()
       }),
       { 
@@ -144,10 +185,17 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('💥 Function execution error:', {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    })
+    
     return new Response(
       JSON.stringify({ 
+        success: false,
         error: error.message,
+        details: 'Check function logs for detailed error information',
         timestamp: new Date().toISOString()
       }),
       { 

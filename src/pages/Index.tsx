@@ -39,6 +39,8 @@ const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isShowingCachedData, setIsShowingCachedData] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchCompanies = async () => {
@@ -155,24 +157,48 @@ const Index = () => {
 
   const fetchRealTimeData = async () => {
     setFetchingRealTime(true);
+    setApiError(null);
+    
     try {
+      console.log('🔄 Attempting to fetch real-time data from Finnhub API...');
+      
       const { data, error } = await supabase.functions.invoke('fetch-stock-data');
       
       if (error) {
-        console.error("Error fetching real-time data:", error);
-        toast({
-          title: "Error",
-          description: `Failed to fetch real-time data: ${error.message || 'Unknown error'}`,
-          variant: "destructive",
+        console.error("❌ Finnhub API Error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          status: error.status,
+          statusText: error.statusText,
+          timestamp: new Date().toISOString()
         });
+        
+        // Set error state but don't show destructive toast - we'll show cached data
+        setApiError(error.message || 'API request failed');
+        setIsShowingCachedData(true);
+        
+        // Show warning toast instead of error
+        toast({
+          title: "API Temporarily Unavailable",
+          description: "Showing last cached data. Will retry automatically.",
+          variant: "default",
+        });
+        
+        // Still refresh current company data from cache
+        if (selectedCompany) {
+          await fetchStockDataForCompany(selectedCompany);
+        }
         return;
       }
 
-      console.log("Real-time data response:", data);
+      console.log("✅ Real-time data fetched successfully:", data);
       setLastUpdate(new Date());
+      setIsShowingCachedData(false);
+      setApiError(null);
+      
       toast({
-        title: "Success",
-        description: data?.message || "Real-time data updated successfully",
+        title: "Real-time Data Updated",
+        description: data?.message || "Live market data refreshed successfully",
       });
 
       // Refresh the current company's data
@@ -180,12 +206,22 @@ const Index = () => {
         await fetchStockDataForCompany(selectedCompany);
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("💥 Network/Connection Error:", error);
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+      
+      setApiError(error instanceof Error ? error.message : 'Network error');
+      setIsShowingCachedData(true);
+      
       toast({
-        title: "Error", 
-        description: `Something went wrong: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
+        title: "Connection Error", 
+        description: "Network issue detected. Showing cached data.",
+        variant: "default",
       });
+      
+      // Still try to show cached data
+      if (selectedCompany) {
+        await fetchStockDataForCompany(selectedCompany);
+      }
     } finally {
       setFetchingRealTime(false);
     }
@@ -262,6 +298,31 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+      {/* Cache Data Banner */}
+      {isShowingCachedData && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2 animate-fade-in">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">
+                📊 Showing cached data - API temporarily unavailable
+              </span>
+              {lastUpdate && (
+                <span className="text-xs opacity-70">
+                  (Last updated: {lastUpdate.toLocaleTimeString()})
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setIsShowingCachedData(false)}
+              className="text-amber-600 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-100"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Navigation */}
       <TopNavigation
         onMenuToggle={handleMenuToggle}
@@ -282,7 +343,8 @@ const Index = () => {
 
       {/* Main Content */}
       <div className={cn(
-        "transition-all duration-300 ease-in-out pt-16",
+        "transition-all duration-300 ease-in-out",
+        isShowingCachedData ? "pt-20" : "pt-16", // Account for cache banner
         sidebarCollapsed ? "lg:ml-16" : "lg:ml-80"
       )}>
         <div className="p-4 lg:p-8">
@@ -294,9 +356,14 @@ const Index = () => {
               </h1>
               <p className="text-muted-foreground">
                 Real-time market data via Finnhub API
-                {lastUpdate && (
+                {lastUpdate && !isShowingCachedData && (
                   <span className="ml-2 text-xs opacity-60">
                     Last updated: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
+                {isShowingCachedData && (
+                  <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                    (Cached data - API issue detected)
                   </span>
                 )}
               </p>
