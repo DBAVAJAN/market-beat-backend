@@ -12,23 +12,23 @@ All colors MUST be HSL.
     --background: 0 0 100;
     --foreground: 0 0 0;
 
-    --card: 248 250 252;
+    --card: 0 0 97;
     --card-foreground: 0 0 0;
 
-    --popover: 255 255 255;
-    --popover-foreground: 30 41 59;
+    --popover: 0 0 100;
+    --popover-foreground: 0 0 0;
 
     --primary: 79 70 229;
     --primary-foreground: 248 250 252;
 
-    --secondary: 241 245 249;
-    --secondary-foreground: 30 41 59;
+    --secondary: 0 0 97;
+    --secondary-foreground: 0 0 0;
 
-    --muted: 241 245 249;
-    --muted-foreground: 100 116 139;
+    --muted: 0 0 97;
+    --muted-foreground: 0 0 40;
 
-    --accent: 241 245 249;
-    --accent-foreground: 30 41 59;
+    --accent: 0 0 97;
+    --accent-foreground: 0 0 0;
 
     --destructive: 239 68 68;
     --destructive-foreground: 248 250 252;

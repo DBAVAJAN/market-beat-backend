@@ -31,14 +31,12 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="bg-[#f8f9fa]">
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <div className="space-y-3 w-full">
+          <Card key={i} className="bg-[#f8f9fa] h-32">
+            <CardContent className="p-4 h-full flex flex-col items-center justify-center">
+              <div className="space-y-3 w-full text-center">
                 <div className="h-4 w-20 bg-muted animate-pulse rounded mx-auto"></div>
-                <div className="text-center">
-                  <div className="h-8 w-24 bg-muted animate-pulse rounded mx-auto"></div>
-                  <div className="h-3 w-16 bg-muted animate-pulse rounded mt-2 mx-auto"></div>
-                </div>
+                <div className="h-8 w-24 bg-muted animate-pulse rounded mx-auto"></div>
+                <div className="h-3 w-16 bg-muted animate-pulse rounded mx-auto"></div>
               </div>
             </CardContent>
           </Card>
@@ -74,13 +72,13 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
       {/* 52W High */}
-      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] flex-1">
-        <CardContent className="p-4 flex flex-col items-center justify-center h-full">
-          <div className="flex items-center space-x-2 mb-3">
+      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] h-32">
+        <CardContent className="p-4 h-full flex flex-col items-center justify-center">
+          <div className="flex items-center space-x-2 mb-2">
             <TrendingUp className="h-4 w-4 text-gain" />
             <span className="text-sm font-medium text-foreground">52W High</span>
           </div>
-          <div className="text-center space-y-1">
+          <div className="text-center space-y-1 flex-1 flex flex-col justify-center">
             <div className="text-2xl font-bold text-foreground">₹{stats.fiftyTwoWeekHigh.toFixed(2)}</div>
             <div className="text-xs text-muted-foreground">
               As of {formatDate(stats.asOf)}
@@ -90,13 +88,13 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
       </Card>
 
       {/* 52W Low */}
-      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] flex-1">
-        <CardContent className="p-4 flex flex-col items-center justify-center h-full">
-          <div className="flex items-center space-x-2 mb-3">
+      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] h-32">
+        <CardContent className="p-4 h-full flex flex-col items-center justify-center">
+          <div className="flex items-center space-x-2 mb-2">
             <TrendingDown className="h-4 w-4 text-loss" />
             <span className="text-sm font-medium text-foreground">52W Low</span>
           </div>
-          <div className="text-center space-y-1">
+          <div className="text-center space-y-1 flex-1 flex flex-col justify-center">
             <div className="text-2xl font-bold text-foreground">₹{stats.fiftyTwoWeekLow.toFixed(2)}</div>
             <div className="text-xs text-muted-foreground">
               As of {formatDate(stats.asOf)}
@@ -106,13 +104,13 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
       </Card>
 
       {/* Avg Volume */}
-      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] flex-1">
-        <CardContent className="p-4 flex flex-col items-center justify-center h-full">
-          <div className="flex items-center space-x-2 mb-3">
+      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] h-32">
+        <CardContent className="p-4 h-full flex flex-col items-center justify-center">
+          <div className="flex items-center space-x-2 mb-2">
             <BarChart3 className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-foreground">Avg Volume (52W)</span>
           </div>
-          <div className="text-center space-y-1">
+          <div className="text-center space-y-1 flex-1 flex flex-col justify-center">
             <div className="text-2xl font-bold text-foreground">{formatVolume(stats.averageVolume)}</div>
             <div className="text-xs text-muted-foreground">
               Daily average
@@ -122,9 +120,9 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
       </Card>
 
       {/* Volume Sparkline */}
-      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] flex-1">
-        <CardContent className="p-4 flex flex-col items-center justify-center h-full">
-          <div className="flex items-center space-x-2 mb-3">
+      <Card className="hover:shadow-md transition-shadow bg-[#f8f9fa] h-32">
+        <CardContent className="p-4 h-full flex flex-col items-center justify-center">
+          <div className="flex items-center space-x-2 mb-2">
             <BarChart3 className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-foreground">Volume Trend</span>
           </div>
