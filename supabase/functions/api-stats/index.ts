@@ -40,6 +40,26 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check if we should use mock data
+    const useMock = Deno.env.get('USE_MOCK') === '1'
+    
+    if (useMock) {
+      console.log('🎭 Using mock stats for symbol:', symbol)
+      
+      const mockStats = generateMockStats()
+      return new Response(
+        JSON.stringify({
+          symbol,
+          stats: mockStats,
+          dataPoints: 252,
+          period: 'Mock data (52 weeks)'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -141,3 +161,18 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+// Helper function to generate mock stats
+function generateMockStats(): StockStats {
+  const basePrice = 150
+  const high = basePrice * (1.1 + Math.random() * 0.2) // 10-30% above base
+  const low = basePrice * (0.7 + Math.random() * 0.2)  // 70-90% of base
+  const volume = Math.floor(2000000 + Math.random() * 3000000) // 2M-5M
+  
+  return {
+    fiftyTwoWeekHigh: Math.round(high * 100) / 100,
+    fiftyTwoWeekLow: Math.round(low * 100) / 100,
+    averageVolume: volume,
+    asOf: new Date().toISOString().split('T')[0]
+  }
+}

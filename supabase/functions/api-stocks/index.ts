@@ -126,6 +126,22 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check if we should use mock data
+    const useMock = Deno.env.get('USE_MOCK') === '1'
+    
+    if (useMock) {
+      console.log('🎭 Using mock data for symbol:', symbol)
+      
+      // Return mock OHLC data
+      const mockData = generateMockOHLCData(range)
+      return new Response(
+        JSON.stringify(mockData),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -196,3 +212,47 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+// Helper function to generate mock OHLC data
+function generateMockOHLCData(range: string) {
+  const basePrice = 150
+  const volatility = 0.02
+  let dataPoints = 30
+  
+  switch (range) {
+    case '1D': dataPoints = 1; break
+    case '1W': dataPoints = 7; break
+    case '1M': dataPoints = 30; break
+    case '6M': dataPoints = 180; break
+    case '1Y': dataPoints = 365; break
+    case 'MAX': dataPoints = 500; break
+  }
+  
+  const data = []
+  let currentPrice = basePrice
+  
+  for (let i = 0; i < dataPoints; i++) {
+    const date = new Date()
+    date.setDate(date.getDate() - (dataPoints - i - 1))
+    
+    const change = (Math.random() - 0.5) * volatility
+    const open = currentPrice
+    const close = open * (1 + change)
+    const high = Math.max(open, close) * (1 + Math.random() * 0.01)
+    const low = Math.min(open, close) * (1 - Math.random() * 0.01)
+    const volume = Math.floor(1000000 + Math.random() * 2000000)
+    
+    data.push({
+      t: date.toISOString().split('T')[0],
+      o: Math.round(open * 100) / 100,
+      h: Math.round(high * 100) / 100,
+      l: Math.round(low * 100) / 100,
+      c: Math.round(close * 100) / 100,
+      v: volume
+    })
+    
+    currentPrice = close
+  }
+  
+  return data
+}

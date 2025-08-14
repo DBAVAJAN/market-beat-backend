@@ -252,6 +252,21 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check if we should use mock data
+    const useMock = Deno.env.get('USE_MOCK') === '1'
+    
+    if (useMock) {
+      console.log('🎭 Using mock prediction for symbol:', symbol)
+      
+      const mockPrediction = generateMockPrediction(symbol)
+      return new Response(
+        JSON.stringify(mockPrediction),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     // Check cache first
     const cacheKey = symbol
     const cached = predictionCache.get(cacheKey)
@@ -428,3 +443,26 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+// Helper function to generate mock prediction
+function generateMockPrediction(symbol: string) {
+  const basePrice = 150 + Math.random() * 50 // Random base between 150-200
+  const volatility = 0.05 // 5% volatility
+  const change = (Math.random() - 0.5) * 0.1 // ±5% change
+  
+  const predictedClose = basePrice * (1 + change)
+  const lower = predictedClose * (1 - volatility)
+  const upper = predictedClose * (1 + volatility)
+  
+  const nextDate = new Date()
+  nextDate.setDate(nextDate.getDate() + 1)
+  
+  return {
+    symbol,
+    predictionDate: nextDate.toISOString().split('T')[0],
+    predictedClose: Math.round(predictedClose * 100) / 100,
+    lower: Math.round(lower * 100) / 100,
+    upper: Math.round(upper * 100) / 100,
+    model: 'mock_linear_regression'
+  }
+}
