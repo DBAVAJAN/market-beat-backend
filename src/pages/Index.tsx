@@ -35,8 +35,10 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [fetchingRealTime, setFetchingRealTime] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const { toast } = useToast();
 
   const fetchCompanies = async () => {
@@ -151,6 +153,44 @@ const Index = () => {
     }
   };
 
+  const fetchRealTimeData = async () => {
+    setFetchingRealTime(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-stock-data');
+      
+      if (error) {
+        console.error("Error fetching real-time data:", error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch real-time data: ${error.message || 'Unknown error'}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Real-time data response:", data);
+      setLastUpdate(new Date());
+      toast({
+        title: "Success",
+        description: data?.message || "Real-time data updated successfully",
+      });
+
+      // Refresh the current company's data
+      if (selectedCompany) {
+        await fetchStockDataForCompany(selectedCompany);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Error", 
+        description: `Something went wrong: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setFetchingRealTime(false);
+    }
+  };
+
   const handleCompanySelect = async (company: Company) => {
     setSelectedCompany(company);
     await fetchStockDataForCompany(company);
@@ -173,6 +213,22 @@ const Index = () => {
       fetchStockDataForCompany(selectedCompany);
     }
   }, [selectedCompany]);
+
+  // Auto-refresh real-time data every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchRealTimeData();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Initial real-time data fetch
+  useEffect(() => {
+    if (companies.length > 0) {
+      fetchRealTimeData();
+    }
+  }, [companies]);
 
   if (loading) {
     return (
@@ -230,26 +286,49 @@ const Index = () => {
         sidebarCollapsed ? "lg:ml-16" : "lg:ml-80"
       )}>
         <div className="p-4 lg:p-8">
-          {/* Header with refresh button */}
+          {/* Header with refresh buttons */}
           <div className="flex items-center justify-between mb-6 animate-fade-in">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                 Premium Dashboard
               </h1>
-              <p className="text-muted-foreground">Advanced market analytics and insights</p>
+              <p className="text-muted-foreground">
+                Real-time market data via Finnhub API
+                {lastUpdate && (
+                  <span className="ml-2 text-xs opacity-60">
+                    Last updated: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
+              </p>
             </div>
-            <Button 
-              onClick={seedStockData} 
-              disabled={seeding}
-              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-hover"
-            >
-              {seeding ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              {seeding ? "Generating..." : "Refresh Data"}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={fetchRealTimeData} 
+                disabled={fetchingRealTime}
+                variant="outline"
+                size="sm"
+                className="border-primary/20 hover:border-primary/40"
+              >
+                {fetchingRealTime ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                {fetchingRealTime ? "Fetching..." : "Real-time Data"}
+              </Button>
+              <Button 
+                onClick={seedStockData} 
+                disabled={seeding}
+                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-hover"
+              >
+                {seeding ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                {seeding ? "Generating..." : "Mock Data"}
+              </Button>
+            </div>
           </div>
 
           {selectedCompany ? (
