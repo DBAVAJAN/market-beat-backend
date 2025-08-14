@@ -1,18 +1,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { StockCard } from "@/components/StockCard";
-import { StockChart } from "@/components/StockChart";
-import { MarketOverview } from "@/components/MarketOverview";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, RefreshCw } from "lucide-react";
+import { StockChart } from "@/components/StockChart";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { StockHeader } from "@/components/StockHeader";
+import { StockStats } from "@/components/StockStats";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BarChart3, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface Company {
-  id: number;
-  name: string;
-  symbol: string;
-}
+type Company = Tables<"companies">;
 
 interface StockData {
   date: string;
@@ -31,55 +29,84 @@ interface CompanyWithData {
 const Index = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companiesWithData, setCompaniesWithData] = useState<CompanyWithData[]>([]);
-  const [selectedStock, setSelectedStock] = useState<CompanyWithData | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedStockData, setSelectedStockData] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const { toast } = useToast();
 
   const fetchCompanies = async () => {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .order('symbol');
+    try {
+      const { data, error } = await supabase
+        .from("companies")
+        .select("*")
+        .order("symbol");
 
-    if (error) {
-      console.error('Error fetching companies:', error);
+      if (error) {
+        console.error("Error fetching companies:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch companies",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setCompanies(data || []);
+      
+      // Auto-select first company
+      if (data && data.length > 0 && !selectedCompany) {
+        setSelectedCompany(data[0]);
+      }
+    } catch (error) {
+      console.error("Error:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch companies",
+        description: "Something went wrong",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    setCompanies(data || []);
   };
 
-  const fetchStockData = async () => {
-    if (companies.length === 0) return;
-
-    const promises = companies.map(async (company) => {
-      const { data, error } = await supabase
-        .from('stock_data')
-        .select('*')
-        .eq('company_id', company.id)
-        .order('date', { ascending: true });
+  const fetchStockDataForCompany = async (company: Company) => {
+    setDataLoading(true);
+    try {
+      const { data: stockData, error } = await supabase
+        .from("stock_data")
+        .select("*")
+        .eq("company_id", company.id)
+        .order("date", { ascending: false })
+        .limit(30);
 
       if (error) {
         console.error(`Error fetching stock data for ${company.symbol}:`, error);
-        return { company, data: [] };
+        setSelectedStockData([]);
+        return;
       }
 
-      return { company, data: data || [] };
-    });
+      const formattedData = stockData?.map(item => ({
+        date: item.date,
+        open: Number(item.open),
+        high: Number(item.high), 
+        low: Number(item.low),
+        close: Number(item.close),
+        volume: Number(item.volume)
+      })) || [];
 
-    const results = await Promise.all(promises);
-    setCompaniesWithData(results);
-    
-    // Set first stock with data as selected by default
-    const firstWithData = results.find(item => item.data.length > 0);
-    if (firstWithData && !selectedStock) {
-      setSelectedStock(firstWithData);
+      setSelectedStockData(formattedData);
+    } catch (error) {
+      console.error("Error fetching stock data:", error);
+      setSelectedStockData([]);
+      toast({
+        title: "Error",
+        description: "Failed to fetch stock data",
+        variant: "destructive",
+      });
+    } finally {
+      setDataLoading(false);
     }
   };
 
@@ -88,182 +115,162 @@ const Index = () => {
     try {
       const { data, error } = await supabase.functions.invoke('seed-stock-data');
       
-      if (error) throw error;
-      
+      if (error) {
+        console.error("Error seeding data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to seed stock data",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Success",
         description: "Stock data seeded successfully",
       });
-      
-      // Refresh data after seeding
-      await fetchStockData();
+
+      // Refresh the current company's data
+      if (selectedCompany) {
+        await fetchStockDataForCompany(selectedCompany);
+      }
     } catch (error) {
-      console.error('Error seeding data:', error);
+      console.error("Error:", error);
       toast({
-        title: "Error",
-        description: "Failed to seed stock data",
+        title: "Error", 
+        description: "Something went wrong",
         variant: "destructive",
       });
+    } finally {
+      setSeeding(false);
     }
-    setSeeding(false);
+  };
+
+  const handleCompanySelect = async (company: Company) => {
+    setSelectedCompany(company);
+    await fetchStockDataForCompany(company);
   };
 
   useEffect(() => {
-    const initializeData = async () => {
-      setLoading(true);
-      await fetchCompanies();
-      setLoading(false);
-    };
-    
-    initializeData();
+    fetchCompanies();
   }, []);
 
   useEffect(() => {
-    if (companies.length > 0) {
-      fetchStockData();
+    if (selectedCompany) {
+      fetchStockDataForCompany(selectedCompany);
     }
-  }, [companies]);
-
-  const calculateMarketStats = () => {
-    let gainers = 0;
-    let losers = 0;
-    let totalVolume = 0;
-    let totalChange = 0;
-    let validCompanies = 0;
-
-    companiesWithData.forEach(({ data }) => {
-      if (data.length >= 2) {
-        const current = data[data.length - 1];
-        const previous = data[data.length - 2];
-        const change = current.close - previous.close;
-        
-        if (change > 0) gainers++;
-        else if (change < 0) losers++;
-        
-        totalVolume += current.volume;
-        totalChange += (change / previous.close) * 100;
-        validCompanies++;
-      }
-    });
-
-    return {
-      totalCompanies: companies.length,
-      gainers,
-      losers,
-      totalVolume,
-      averageChange: validCompanies > 0 ? totalChange / validCompanies : 0
-    };
-  };
+  }, [selectedCompany]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading stock market data...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading market data...</p>
         </div>
       </div>
     );
   }
 
-  const hasData = companiesWithData.some(item => item.data.length > 0);
+  if (companies.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto">
+          <h2 className="text-2xl font-bold mb-4">No Companies Available</h2>
+          <p className="text-muted-foreground mb-6">
+            It seems like there are no companies in the database. Please ensure the database migration has been completed.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card/50 backdrop-blur">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Indian Stock Market</h1>
-                <p className="text-sm text-muted-foreground">Live market dashboard</p>
-              </div>
+      {/* Sidebar */}
+      <DashboardSidebar
+        companies={companies}
+        selectedCompany={selectedCompany}
+        onCompanySelect={handleCompanySelect}
+        isLoading={loading}
+      />
+
+      {/* Main Content */}
+      <div className={cn(
+        "transition-all duration-300 ease-in-out lg:ml-80",
+        "min-h-screen"
+      )}>
+        <div className="p-4 lg:p-8">
+          {/* Header with refresh button */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold">Stock Market Dashboard</h1>
+              <p className="text-muted-foreground">Real-time market overview and analysis</p>
             </div>
             <Button 
               onClick={seedStockData} 
               disabled={seeding}
               variant="outline"
-              className="gap-2"
             >
               {seeding ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              {seeding ? 'Seeding...' : 'Refresh Data'}
+              {seeding ? "Generating..." : "Refresh Data"}
             </Button>
           </div>
-        </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {!hasData ? (
-          <Card className="w-full max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle className="text-center">No Stock Data Available</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                Click the button below to generate sample stock data for the last 30 days.
-              </p>
-              <Button 
-                onClick={seedStockData} 
-                disabled={seeding}
-                className="w-full gap-2"
-              >
-                {seeding ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <BarChart3 className="h-4 w-4" />
-                )}
-                {seeding ? 'Generating Data...' : 'Generate Stock Data'}
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Market Overview */}
-            <MarketOverview stats={calculateMarketStats()} />
+          {selectedCompany ? (
+            <div className="space-y-6">
+              {/* Stock Header */}
+              <StockHeader company={selectedCompany} data={selectedStockData} />
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {/* Stock Grid */}
-              <div className="xl:col-span-1">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Stocks</h2>
-                <div className="grid grid-cols-1 gap-3">
-                  {companiesWithData.map(({ company, data }) => (
-                    <StockCard
-                      key={company.id}
-                      symbol={company.symbol}
-                      name={company.name}
-                      data={data}
-                      onClick={() => setSelectedStock({ company, data })}
+              {/* Main Chart Section */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="xl:col-span-2">
+                  {dataLoading ? (
+                    <div className="h-96 bg-card border rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                        <p className="text-muted-foreground">Loading chart data...</p>
+                      </div>
+                    </div>
+                  ) : selectedStockData.length > 0 ? (
+                    <StockChart
+                      symbol={selectedCompany.symbol}
+                      name={selectedCompany.name}
+                      data={selectedStockData}
                     />
-                  ))}
+                  ) : (
+                    <div className="h-96 bg-card border rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-muted-foreground mb-4">No stock data available for {selectedCompany.symbol}</p>
+                        <Button onClick={seedStockData} disabled={seeding} size="sm">
+                          {seeding ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                          )}
+                          Generate Data
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stats Section */}
+                <div className="xl:col-span-1">
+                  <StockStats data={selectedStockData} />
                 </div>
               </div>
-
-              {/* Chart Area */}
-              <div className="xl:col-span-2">
-                {selectedStock ? (
-                  <StockChart
-                    symbol={selectedStock.company.symbol}
-                    name={selectedStock.company.name}
-                    data={selectedStock.data}
-                  />
-                ) : (
-                  <Card className="w-full h-96 flex items-center justify-center">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Select a stock to view its chart</p>
-                    </div>
-                  </Card>
-                )}
-              </div>
             </div>
-          </>
-        )}
+          ) : (
+            <div className="h-96 bg-card border rounded-lg flex items-center justify-center">
+              <p className="text-muted-foreground">Select a company from the sidebar to view stock data</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
