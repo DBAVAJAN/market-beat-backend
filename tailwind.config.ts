@@ -52,6 +52,24 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				gain: {
+					DEFAULT: 'hsl(var(--gain))',
+					foreground: 'hsl(var(--gain-foreground))'
+				},
+				loss: {
+					DEFAULT: 'hsl(var(--loss))',
+					foreground: 'hsl(var(--loss-foreground))'
+				},
+				neutral: {
+					DEFAULT: 'hsl(var(--neutral))',
+					foreground: 'hsl(var(--neutral-foreground))'
+				},
+				chart: {
+					1: 'hsl(var(--chart-primary))',
+					2: 'hsl(var(--chart-secondary))',
+					3: 'hsl(var(--chart-tertiary))',
+					4: 'hsl(var(--chart-quaternary))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
