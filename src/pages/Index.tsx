@@ -9,7 +9,7 @@ import { StockStats } from "@/components/StockStats";
 import { TopNavigation } from "@/components/TopNavigation";
 import { TimeframeControls } from "@/components/TimeframeControls";
 import { ChartTypeToggle } from "@/components/ChartTypeToggle";
-import { StatsDisplay } from "@/components/StatsDisplay";
+import { StockStatTiles } from "@/components/StockStatTiles";
 import { InteractiveChart } from "@/components/InteractiveChart";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -622,8 +622,9 @@ const Index = () => {
                     disabled={chartLoading}
                   />
                 </div>
-                <StatsDisplay
+                <StockStatTiles
                   stats={stockStats}
+                  volumeData={ohlcData}
                   loading={statsLoading}
                   symbol={selectedCompany?.symbol}
                 />
