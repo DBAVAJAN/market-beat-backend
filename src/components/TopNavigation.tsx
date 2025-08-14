@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Search, User, Menu, X } from "lucide-react";
+import { Search, User, Menu, LogOut, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/components/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface TopNavigationProps {
@@ -17,6 +20,16 @@ export function TopNavigation({
   onSearchChange 
 }: TopNavigationProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAuthAction = async () => {
+    if (user) {
+      await signOut();
+    } else {
+      navigate('/auth');
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-gradient-to-r from-primary to-primary/90 backdrop-blur-sm border-b border-primary/20">
@@ -67,19 +80,49 @@ export function TopNavigation({
 
         {/* Right: User Profile */}
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-primary-foreground hover:bg-primary-foreground/10 hidden sm:flex"
-          >
-            <span className="text-sm">Welcome back!</span>
-          </Button>
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary-foreground hover:bg-primary-foreground/10 hidden sm:flex"
+            >
+              <span className="text-sm">Welcome {profile?.display_name || user.email}!</span>
+            </Button>
+          )}
           
-          <Avatar className="h-8 w-8 ring-2 ring-primary-foreground/20 hover:ring-primary-foreground/40 transition-all duration-300">
-            <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 text-primary-foreground hover:bg-primary-foreground/10 p-2"
+              >
+                <Avatar className="h-8 w-8 ring-2 ring-primary-foreground/20 hover:ring-primary-foreground/40 transition-all duration-300">
+                  <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium">
+                  {user ? 'Account' : 'Login'}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleAuthAction}>
+                {user ? (
+                  <>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </>
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       

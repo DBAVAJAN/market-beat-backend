@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { StockChart } from "@/components/StockChart";
@@ -195,10 +196,23 @@ const Index = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch prediction: ${response.statusText}`);
+        // Show user-friendly error message for failed predictions
+        toast({
+          title: "Prediction temporarily unavailable",
+          description: "Please try again in a few moments.",
+          variant: "default",
+        });
+        setPrediction(null);
+        return;
       }
 
       const result = await response.json();
+      
+      // Validate the response has required fields
+      if (!result.predictedClose || !result.predictionDate) {
+        throw new Error('Invalid prediction response');
+      }
+      
       setPrediction(result);
       
       toast({
@@ -210,9 +224,9 @@ const Index = () => {
       console.error("Error fetching prediction:", error);
       setPrediction(null);
       toast({
-        title: "Prediction Error",
-        description: "Failed to generate prediction.",
-        variant: "destructive",
+        title: "Prediction temporarily unavailable",
+        description: "Please try again later.",
+        variant: "default",
       });
     } finally {
       setPredictionLoading(false);
@@ -500,7 +514,8 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background">
       {/* Cache Data Banner */}
       {isShowingCachedData && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 animate-fade-in">
@@ -727,7 +742,8 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 };
 
