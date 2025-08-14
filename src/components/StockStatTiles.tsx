@@ -29,14 +29,18 @@ interface StockStatTilesProps {
 export function StockStatTiles({ stats, volumeData, loading = false, symbol }: StockStatTilesProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="p-4">
-            <div className="space-y-2">
-              <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
-              <div className="h-6 w-16 bg-muted animate-pulse rounded"></div>
-              <div className="h-3 w-24 bg-muted animate-pulse rounded"></div>
-            </div>
+          <Card key={i} className="bg-card">
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
+                <div className="text-center">
+                  <div className="h-8 w-24 bg-muted animate-pulse rounded mx-auto"></div>
+                  <div className="h-3 w-16 bg-muted animate-pulse rounded mt-2 mx-auto"></div>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         ))}
       </div>
@@ -68,16 +72,18 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* 52W High */}
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow bg-card">
         <CardContent className="p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
-            <span className="text-sm font-medium text-muted-foreground">52W High</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-4 w-4 text-gain" />
+              <span className="text-sm font-medium text-muted-foreground">52W High</span>
+            </div>
           </div>
-          <div className="space-y-1">
-            <div className="text-xl font-bold">₹{stats.fiftyTwoWeekHigh.toFixed(2)}</div>
+          <div className="text-center space-y-1">
+            <div className="text-2xl font-bold text-card-foreground">₹{stats.fiftyTwoWeekHigh.toFixed(2)}</div>
             <div className="text-xs text-muted-foreground">
               As of {formatDate(stats.asOf)}
             </div>
@@ -86,14 +92,16 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
       </Card>
 
       {/* 52W Low */}
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow bg-card">
         <CardContent className="p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            <span className="text-sm font-medium text-muted-foreground">52W Low</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <TrendingDown className="h-4 w-4 text-loss" />
+              <span className="text-sm font-medium text-muted-foreground">52W Low</span>
+            </div>
           </div>
-          <div className="space-y-1">
-            <div className="text-xl font-bold">₹{stats.fiftyTwoWeekLow.toFixed(2)}</div>
+          <div className="text-center space-y-1">
+            <div className="text-2xl font-bold text-card-foreground">₹{stats.fiftyTwoWeekLow.toFixed(2)}</div>
             <div className="text-xs text-muted-foreground">
               As of {formatDate(stats.asOf)}
             </div>
@@ -102,14 +110,16 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
       </Card>
 
       {/* Avg Volume */}
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow bg-card">
         <CardContent className="p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-medium text-muted-foreground">Avg Volume (52W)</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-muted-foreground">Avg Volume (52W)</span>
+            </div>
           </div>
-          <div className="space-y-1">
-            <div className="text-xl font-bold">{formatVolume(stats.averageVolume)}</div>
+          <div className="text-center space-y-1">
+            <div className="text-2xl font-bold text-card-foreground">{formatVolume(stats.averageVolume)}</div>
             <div className="text-xs text-muted-foreground">
               Daily average
             </div>
@@ -118,15 +128,19 @@ export function StockStatTiles({ stats, volumeData, loading = false, symbol }: S
       </Card>
 
       {/* Volume Sparkline */}
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow bg-card">
         <CardContent className="p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <BarChart3 className="h-4 w-4 text-purple-500" />
-            <span className="text-sm font-medium text-muted-foreground">Volume Trend</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-4 w-4 text-accent-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Volume Trend</span>
+            </div>
           </div>
           <div className="space-y-2">
-            <VolumeSparkline data={volumeData} />
-            <div className="text-xs text-muted-foreground">
+            <div className="flex justify-center">
+              <VolumeSparkline data={volumeData} />
+            </div>
+            <div className="text-xs text-muted-foreground text-center">
               Last 30 sessions
             </div>
           </div>

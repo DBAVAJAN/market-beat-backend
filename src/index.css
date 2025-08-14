@@ -9,10 +9,10 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Premium Fintech Color Palette */
-    --background: 248 250 252;
+    --background: 255 255 255;
     --foreground: 30 41 59;
 
-    --card: 255 255 255;
+    --card: 248 250 252;
     --card-foreground: 30 41 59;
 
     --popover: 255 255 255;
