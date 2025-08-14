@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.api-stats]
 verify_jwt = false
+
+[functions.api-predict]
+verify_jwt = false
