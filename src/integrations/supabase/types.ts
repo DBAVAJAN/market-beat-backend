@@ -14,7 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          symbol: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          symbol: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
+      stock_data: {
+        Row: {
+          close: number
+          company_id: string
+          created_at: string
+          date: string
+          high: number
+          id: string
+          low: number
+          open: number
+          volume: number
+        }
+        Insert: {
+          close: number
+          company_id: string
+          created_at?: string
+          date: string
+          high: number
+          id?: string
+          low: number
+          open: number
+          volume: number
+        }
+        Update: {
+          close?: number
+          company_id?: string
+          created_at?: string
+          date?: string
+          high?: number
+          id?: string
+          low?: number
+          open?: number
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
