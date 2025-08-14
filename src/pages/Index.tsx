@@ -6,6 +6,7 @@ import { StockChart } from "@/components/StockChart";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { StockHeader } from "@/components/StockHeader";
 import { StockStats } from "@/components/StockStats";
+import { TopNavigation } from "@/components/TopNavigation";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -34,6 +35,8 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
   const fetchCompanies = async () => {
@@ -149,6 +152,14 @@ const Index = () => {
   const handleCompanySelect = async (company: Company) => {
     setSelectedCompany(company);
     await fetchStockDataForCompany(company);
+    // Close sidebar on mobile after selection
+    if (window.innerWidth < 1024) {
+      setSidebarCollapsed(true);
+    }
+  };
+
+  const handleMenuToggle = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   useEffect(() => {
@@ -163,10 +174,13 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading market data...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="text-center animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mx-auto mb-4 animate-glow">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-foreground" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Market Beat</h2>
+          <p className="text-muted-foreground">Loading premium market data...</p>
         </div>
       </div>
     );
@@ -174,8 +188,11 @@ const Index = () => {
 
   if (companies.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="text-center max-w-md mx-auto animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center mx-auto mb-6">
+            <span className="text-2xl">📊</span>
+          </div>
           <h2 className="text-2xl font-bold mb-4">No Companies Available</h2>
           <p className="text-muted-foreground mb-6">
             It seems like there are no companies in the database. Please ensure the database migration has been completed.
@@ -186,31 +203,43 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+      {/* Top Navigation */}
+      <TopNavigation
+        onMenuToggle={handleMenuToggle}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
       {/* Sidebar */}
       <DashboardSidebar
         companies={companies}
         selectedCompany={selectedCompany}
         onCompanySelect={handleCompanySelect}
         isLoading={loading}
+        isCollapsed={sidebarCollapsed}
+        onToggle={handleMenuToggle}
+        searchQuery={searchQuery}
       />
 
       {/* Main Content */}
       <div className={cn(
-        "transition-all duration-300 ease-in-out lg:ml-80",
-        "min-h-screen"
+        "transition-all duration-300 ease-in-out pt-16",
+        sidebarCollapsed ? "lg:ml-16" : "lg:ml-80"
       )}>
         <div className="p-4 lg:p-8">
           {/* Header with refresh button */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 animate-fade-in">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold">Stock Market Dashboard</h1>
-              <p className="text-muted-foreground">Real-time market overview and analysis</p>
+              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                Premium Dashboard
+              </h1>
+              <p className="text-muted-foreground">Advanced market analytics and insights</p>
             </div>
             <Button 
               onClick={seedStockData} 
               disabled={seeding}
-              variant="outline"
+              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-hover"
             >
               {seeding ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -224,16 +253,20 @@ const Index = () => {
           {selectedCompany ? (
             <div className="space-y-6">
               {/* Stock Header */}
-              <StockHeader company={selectedCompany} data={selectedStockData} />
+              <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
+                <StockHeader company={selectedCompany} data={selectedStockData} />
+              </div>
 
-              {/* Main Chart Section */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2">
+              {/* Main Chart and Stats Section */}
+              <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                <div className="xl:col-span-3 animate-fade-in" style={{ animationDelay: "200ms" }}>
                   {dataLoading ? (
-                    <div className="h-96 bg-card border rounded-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                        <p className="text-muted-foreground">Loading chart data...</p>
+                    <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">
+                      <div className="text-center animate-fade-in">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                        <p className="text-muted-foreground">Loading premium chart data...</p>
                       </div>
                     </div>
                   ) : selectedStockData.length > 0 ? (
@@ -243,10 +276,18 @@ const Index = () => {
                       data={selectedStockData}
                     />
                   ) : (
-                    <div className="h-96 bg-card border rounded-lg flex items-center justify-center">
-                      <div className="text-center">
+                    <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">
+                      <div className="text-center animate-fade-in">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center mx-auto mb-4">
+                          <span className="text-xl">📈</span>
+                        </div>
                         <p className="text-muted-foreground mb-4">No stock data available for {selectedCompany.symbol}</p>
-                        <Button onClick={seedStockData} disabled={seeding} size="sm">
+                        <Button 
+                          onClick={seedStockData} 
+                          disabled={seeding} 
+                          size="sm"
+                          className="bg-gradient-to-r from-primary to-primary/90"
+                        >
                           {seeding ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           ) : (
@@ -260,14 +301,20 @@ const Index = () => {
                 </div>
 
                 {/* Stats Section */}
-                <div className="xl:col-span-1">
+                <div className="xl:col-span-1 animate-fade-in" style={{ animationDelay: "300ms" }}>
                   <StockStats data={selectedStockData} />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="h-96 bg-card border rounded-lg flex items-center justify-center">
-              <p className="text-muted-foreground">Select a company from the sidebar to view stock data</p>
+            <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card animate-fade-in">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">👆</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Select a Company</h3>
+                <p className="text-muted-foreground">Choose a company from the sidebar to view premium analytics</p>
+              </div>
             </div>
           )}
         </div>
