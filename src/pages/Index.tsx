@@ -120,17 +120,19 @@ const Index = () => {
       
       if (error) {
         console.error("Error seeding data:", error);
+        console.error("Error details:", error);
         toast({
           title: "Error",
-          description: "Failed to seed stock data",
+          description: `Failed to seed stock data: ${error.message || 'Unknown error'}`,
           variant: "destructive",
         });
         return;
       }
 
+      console.log("Seed response:", data);
       toast({
         title: "Success",
-        description: "Stock data seeded successfully",
+        description: data?.message || "Stock data seeded successfully",
       });
 
       // Refresh the current company's data
@@ -141,7 +143,7 @@ const Index = () => {
       console.error("Error:", error);
       toast({
         title: "Error", 
-        description: "Something went wrong",
+        description: `Something went wrong: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {

@@ -1,1 +1,4 @@
 project_id = "jzkdpoaxesfggreojydu"
+
+[functions.seed-stock-data]
+verify_jwt = false
