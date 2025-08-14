@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -7,6 +7,10 @@ import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { StockHeader } from "@/components/StockHeader";
 import { StockStats } from "@/components/StockStats";
 import { TopNavigation } from "@/components/TopNavigation";
+import { TimeframeControls } from "@/components/TimeframeControls";
+import { ChartTypeToggle } from "@/components/ChartTypeToggle";
+import { StatsDisplay } from "@/components/StatsDisplay";
+import { InteractiveChart } from "@/components/InteractiveChart";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -22,10 +26,28 @@ interface StockData {
   volume: number;
 }
 
+interface OHLCData {
+  t: string;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}
+
+interface StockStats {
+  fiftyTwoWeekHigh: number;
+  fiftyTwoWeekLow: number;
+  averageVolume: number;
+  asOf: string;
+}
+
 interface CompanyWithData {
   company: Company;
   data: StockData[];
 }
+
+const timeframes = ['1D', '1W', '1M', '6M', '1Y', 'MAX'];
 
 const Index = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -41,6 +63,15 @@ const Index = () => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [isShowingCachedData, setIsShowingCachedData] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  
+  // New chart states
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1M');
+  const [chartType, setChartType] = useState<'line' | 'candlestick'>('candlestick');
+  const [ohlcData, setOhlcData] = useState<OHLCData[]>([]);
+  const [stockStats, setStockStats] = useState<StockStats | null>(null);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  
   const { toast } = useToast();
 
   const fetchCompanies = async () => {
@@ -75,6 +106,68 @@ const Index = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // API call functions for new endpoints
+  const fetchOHLCData = async (symbol: string, timeframe: string) => {
+    setChartLoading(true);
+    try {
+      // Use supabase.functions.invoke to call the Edge Function properly
+      const response = await fetch(`https://jzkdpoaxesfggreojydu.supabase.co/functions/v1/api-stocks/${symbol}?range=${timeframe}`, {
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6a2Rwb2F4ZXNmZ2dyZW9qeWR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNTYyOTMsImV4cCI6MjA3MDczMjI5M30.2CDAVcEJc4WNrd2ucoMr9OJQ9AOqT-AcSQlEUFSa5ZM`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch OHLC data: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setOhlcData(result.data || []);
+      
+    } catch (error) {
+      console.error("Error fetching OHLC data:", error);
+      setOhlcData([]);
+      toast({
+        title: "Chart Data Error",
+        description: "Failed to load chart data. Using fallback data.",
+        variant: "default",
+      });
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  const fetchStockStatsData = async (symbol: string) => {
+    setStatsLoading(true);
+    try {
+      const response = await fetch(`https://jzkdpoaxesfggreojydu.supabase.co/functions/v1/api-stats/${symbol}`, {
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6a2Rwb2F4ZXNmZ2dyZW9qeWR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNTYyOTMsImV4cCI6MjA3MDczMjI5M30.2CDAVcEJc4WNrd2ucoMr9OJQ9AOqT-AcSQlEUFSa5ZM`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stats: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setStockStats(result.stats || null);
+      
+    } catch (error) {
+      console.error("Error fetching stock stats:", error);
+      setStockStats(null);
+      toast({
+        title: "Stats Error",
+        description: "Failed to load stock statistics.",
+        variant: "default",
+      });
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -227,9 +320,32 @@ const Index = () => {
     }
   };
 
+  // Event handlers for new chart functionality
+  const handleTimeframeChange = useCallback(async (timeframe: string) => {
+    setSelectedTimeframe(timeframe);
+    if (selectedCompany) {
+      // Fetch both OHLC data and stats in parallel
+      await Promise.all([
+        fetchOHLCData(selectedCompany.symbol, timeframe),
+        fetchStockStatsData(selectedCompany.symbol)
+      ]);
+    }
+  }, [selectedCompany]);
+
+  const handleChartTypeToggle = useCallback((type: 'line' | 'candlestick') => {
+    setChartType(type);
+  }, []);
+
   const handleCompanySelect = async (company: Company) => {
     setSelectedCompany(company);
     await fetchStockDataForCompany(company);
+    
+    // Fetch new chart data for the selected company
+    await Promise.all([
+      fetchOHLCData(company.symbol, selectedTimeframe),
+      fetchStockStatsData(company.symbol)
+    ]);
+    
     // Close sidebar on mobile after selection
     if (window.innerWidth < 1024) {
       setSidebarCollapsed(true);
@@ -240,6 +356,31 @@ const Index = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return; // Don't trigger when user is typing in inputs
+      }
+
+      const currentIndex = timeframes.indexOf(selectedTimeframe);
+      
+      if (event.key === '[' && currentIndex > 0) {
+        event.preventDefault();
+        handleTimeframeChange(timeframes[currentIndex - 1]);
+      } else if (event.key === ']' && currentIndex < timeframes.length - 1) {
+        event.preventDefault();
+        handleTimeframeChange(timeframes[currentIndex + 1]);
+      } else if (event.key.toLowerCase() === 'c') {
+        event.preventDefault();
+        handleChartTypeToggle(chartType === 'line' ? 'candlestick' : 'line');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [selectedTimeframe, chartType, handleTimeframeChange, handleChartTypeToggle]);
+
   useEffect(() => {
     fetchCompanies();
   }, []);
@@ -247,6 +388,11 @@ const Index = () => {
   useEffect(() => {
     if (selectedCompany) {
       fetchStockDataForCompany(selectedCompany);
+      // Fetch chart data when company changes
+      Promise.all([
+        fetchOHLCData(selectedCompany.symbol, selectedTimeframe),
+        fetchStockStatsData(selectedCompany.symbol)
+      ]);
     }
   }, [selectedCompany]);
 
@@ -405,10 +551,54 @@ const Index = () => {
                 <StockHeader company={selectedCompany} data={selectedStockData} />
               </div>
 
+              {/* Chart Controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <TimeframeControls
+                    selected={selectedTimeframe}
+                    onSelect={handleTimeframeChange}
+                    disabled={chartLoading || statsLoading}
+                  />
+                  <ChartTypeToggle
+                    chartType={chartType}
+                    onToggle={handleChartTypeToggle}
+                    disabled={chartLoading}
+                  />
+                </div>
+                <StatsDisplay
+                  stats={stockStats}
+                  loading={statsLoading}
+                  symbol={selectedCompany?.symbol}
+                />
+              </div>
+
+              {/* Keyboard Shortcuts Help */}
+              <div className="text-xs text-muted-foreground mb-4 animate-fade-in" style={{ animationDelay: "150ms" }}>
+                💡 Shortcuts: [ ] to change timeframe, C to toggle chart type
+              </div>
+
               {/* Main Chart and Stats Section */}
               <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
                 <div className="xl:col-span-3 animate-fade-in" style={{ animationDelay: "200ms" }}>
-                  {dataLoading ? (
+                  {chartLoading ? (
+                    <div className="h-[500px] bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">
+                      <div className="text-center animate-fade-in">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                        <p className="text-muted-foreground">Loading interactive chart...</p>
+                      </div>
+                    </div>
+                  ) : ohlcData.length > 0 ? (
+                    <InteractiveChart
+                      data={ohlcData}
+                      stats={stockStats}
+                      symbol={selectedCompany.symbol}
+                      chartType={chartType}
+                      timeframe={selectedTimeframe}
+                      loading={chartLoading}
+                    />
+                  ) : dataLoading ? (
                     <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">
                       <div className="text-center animate-fade-in">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
