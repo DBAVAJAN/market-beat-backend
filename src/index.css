@@ -8,44 +8,44 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Premium Fintech Color Palette */
+    /* Clean White Dashboard Colors */
     --background: 0 0 100;
     --foreground: 0 0 0;
 
-    --card: 0 0 97;
+    --card: 0 0 97.3;
     --card-foreground: 0 0 0;
 
     --popover: 0 0 100;
     --popover-foreground: 0 0 0;
 
     --primary: 79 70 229;
-    --primary-foreground: 248 250 252;
+    --primary-foreground: 0 0 100;
 
-    --secondary: 0 0 97;
+    --secondary: 0 0 96;
     --secondary-foreground: 0 0 0;
 
-    --muted: 0 0 97;
+    --muted: 0 0 94;
     --muted-foreground: 0 0 40;
 
-    --accent: 0 0 97;
+    --accent: 240 6 96;
     --accent-foreground: 0 0 0;
 
-    --destructive: 239 68 68;
-    --destructive-foreground: 248 250 252;
+    --destructive: 0 84 60;
+    --destructive-foreground: 0 0 100;
 
-    --border: 226 232 240;
-    --input: 226 232 240;
+    --border: 0 0 90;
+    --input: 0 0 90;
     --ring: 79 70 229;
 
     --radius: 0.75rem;
 
     /* Premium Financial Colors */
-    --gain: 34 197 94;
-    --gain-foreground: 255 255 255;
-    --loss: 239 68 68;
-    --loss-foreground: 255 255 255;
-    --neutral: 100 116 139;
-    --neutral-foreground: 255 255 255;
+    --gain: 120 60 50;
+    --gain-foreground: 0 0 100;
+    --loss: 0 84 60;
+    --loss-foreground: 0 0 100;
+    --neutral: 0 0 40;
+    --neutral-foreground: 0 0 100;
     
     /* Chart colors */
     --chart-primary: 79 70 229;
@@ -68,13 +68,13 @@ All colors MUST be HSL.
     --shadow-glow: 0 0 20px hsl(79 70 229 / 0.3);
 
     /* Sidebar */
-    --sidebar-background: 255 255 255;
-    --sidebar-foreground: 30 41 59;
+    --sidebar-background: 0 0 100;
+    --sidebar-foreground: 0 0 0;
     --sidebar-primary: 79 70 229;
-    --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 248 250 252;
-    --sidebar-accent-foreground: 30 41 59;
-    --sidebar-border: 226 232 240;
+    --sidebar-primary-foreground: 0 0 100;
+    --sidebar-accent: 0 0 96;
+    --sidebar-accent-foreground: 0 0 0;
+    --sidebar-border: 0 0 90;
     --sidebar-ring: 79 70 229;
   }
 
@@ -137,6 +137,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 

@@ -63,9 +63,8 @@ export function DashboardSidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-sidebar border-r border-sidebar-border z-50 transition-all duration-300 ease-in-out animate-slide-in",
-          "lg:static lg:z-auto lg:top-0 lg:h-screen",
-          isCollapsed ? "-translate-x-full lg:w-16" : "w-80 lg:w-80"
+          "h-full bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-16" : "w-80"
         )}
       >
         {/* Header */}

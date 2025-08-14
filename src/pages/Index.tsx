@@ -500,12 +500,12 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+    <div className="min-h-screen bg-background">
       {/* Cache Data Banner */}
       {isShowingCachedData && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2 animate-fade-in">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 animate-fade-in">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+            <div className="flex items-center gap-2 text-amber-800">
               <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium">
                 📊 Showing cached data - API temporarily unavailable
@@ -518,7 +518,7 @@ const Index = () => {
             </div>
             <button
               onClick={() => setIsShowingCachedData(false)}
-              className="text-amber-600 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-100"
+              className="text-amber-600 hover:text-amber-800"
             >
               ×
             </button>
@@ -533,151 +533,155 @@ const Index = () => {
         onSearchChange={setSearchQuery}
       />
 
-      {/* Sidebar */}
-      <DashboardSidebar
-        companies={companies}
-        selectedCompany={selectedCompany}
-        onCompanySelect={handleCompanySelect}
-        isLoading={loading}
-        isCollapsed={sidebarCollapsed}
-        onToggle={handleMenuToggle}
-        searchQuery={searchQuery}
-      />
+      {/* Main Layout Container */}
+      <div className="flex w-full">
+        {/* Sidebar - Fixed width, scrollable */}
+        <div className={cn(
+          "transition-all duration-300 ease-in-out border-r border-border bg-card",
+          isShowingCachedData ? "pt-20" : "pt-16",
+          sidebarCollapsed ? "w-16" : "w-80"
+        )}>
+          <DashboardSidebar
+            companies={companies}
+            selectedCompany={selectedCompany}
+            onCompanySelect={handleCompanySelect}
+            isLoading={loading}
+            isCollapsed={sidebarCollapsed}
+            onToggle={handleMenuToggle}
+            searchQuery={searchQuery}
+          />
+        </div>
 
-      {/* Main Content */}
-      <div className={cn(
-        "transition-all duration-300 ease-in-out",
-        isShowingCachedData ? "pt-20" : "pt-16", // Account for cache banner
-        sidebarCollapsed ? "lg:ml-16" : "lg:ml-80"
-      )}>
-        <div className="p-4 lg:p-8">
-          {/* Header with refresh buttons */}
-          <div className="flex items-center justify-between mb-6 animate-fade-in">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Premium Dashboard
-              </h1>
-              <p className="text-muted-foreground">
-                Real-time market data via Finnhub API
-                {lastUpdate && !isShowingCachedData && (
-                  <span className="ml-2 text-xs opacity-60">
-                    Last updated: {lastUpdate.toLocaleTimeString()}
-                  </span>
-                )}
-                {isShowingCachedData && (
-                  <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
-                    (Cached data - API issue detected)
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={fetchRealTimeData} 
-                disabled={fetchingRealTime}
-                variant="outline"
-                size="sm"
-                className="border-primary/20 hover:border-primary/40"
-              >
-                {fetchingRealTime ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                {fetchingRealTime ? "Fetching..." : "Real-time Data"}
-              </Button>
-              <Button 
-                onClick={seedStockData} 
-                disabled={seeding}
-                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-hover"
-              >
-                {seeding ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                {seeding ? "Generating..." : "Mock Data"}
-              </Button>
-            </div>
-          </div>
-
-          {selectedCompany ? (
-            <div className="space-y-6">
-              {/* Stock Header */}
-              <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
-                <StockHeader company={selectedCompany} data={selectedStockData} />
+        {/* Main Content Area */}
+        <div className={cn(
+          "flex-1 transition-all duration-300 ease-in-out",
+          isShowingCachedData ? "pt-20" : "pt-16"
+        )}>
+          <div className="p-6">
+            {/* Header with refresh buttons */}
+            <div className="flex items-center justify-between mb-6 animate-fade-in">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Market Dashboard
+                </h1>
+                <p className="text-muted-foreground">
+                  Real-time market data analytics
+                  {lastUpdate && !isShowingCachedData && (
+                    <span className="ml-2 text-xs opacity-60">
+                      Last updated: {lastUpdate.toLocaleTimeString()}
+                    </span>
+                  )}
+                  {isShowingCachedData && (
+                    <span className="ml-2 text-xs text-amber-600">
+                      (Cached data - API issue detected)
+                    </span>
+                  )}
+                </p>
               </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={fetchRealTimeData} 
+                  disabled={fetchingRealTime}
+                  variant="outline"
+                  size="sm"
+                  className="border-border hover:bg-accent"
+                >
+                  {fetchingRealTime ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  {fetchingRealTime ? "Fetching..." : "Real-time Data"}
+                </Button>
+                <Button 
+                  onClick={seedStockData} 
+                  disabled={seeding}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {seeding ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  {seeding ? "Generating..." : "Mock Data"}
+                </Button>
+              </div>
+            </div>
 
-              {/* Chart Controls */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <TimeframeControls
-                    selected={selectedTimeframe}
-                    onSelect={handleTimeframeChange}
-                    disabled={chartLoading || statsLoading}
-                  />
-                  <ChartTypeToggle
-                    chartType={chartType}
-                    onToggle={handleChartTypeToggle}
-                    disabled={chartLoading}
-                  />
+            {selectedCompany ? (
+              <div className="space-y-6">
+                {/* Stock Header */}
+                <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
+                  <StockHeader company={selectedCompany} data={selectedStockData} />
                 </div>
-                <StockStatTiles
-                  stats={stockStats}
-                  volumeData={ohlcData}
-                  loading={statsLoading}
-                  symbol={selectedCompany?.symbol}
-                />
-              </div>
 
-              {/* Keyboard Shortcuts Help */}
-              <div className="text-xs text-muted-foreground mb-4 animate-fade-in" style={{ animationDelay: "150ms" }}>
-                💡 Shortcuts: [ ] to change timeframe, C to toggle chart type
-              </div>
+                {/* Chart Controls */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-fade-in" style={{ animationDelay: "150ms" }}>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <TimeframeControls
+                      selected={selectedTimeframe}
+                      onSelect={handleTimeframeChange}
+                      disabled={chartLoading || statsLoading}
+                    />
+                    <ChartTypeToggle
+                      chartType={chartType}
+                      onToggle={handleChartTypeToggle}
+                      disabled={chartLoading}
+                    />
+                  </div>
+                </div>
 
-              {/* Main Chart and Stats Section */}
-              <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                <div className="xl:col-span-3 animate-fade-in" style={{ animationDelay: "200ms" }}>
+                {/* Keyboard Shortcuts Help */}
+                <div className="text-xs text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
+                  💡 Shortcuts: [ ] to change timeframe, C to toggle chart type
+                </div>
+
+                {/* Chart Section */}
+                <div className="mb-6 animate-fade-in" style={{ animationDelay: "250ms" }}>
                   {chartLoading ? (
-                    <div className="h-[500px] bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">
+                    <div className="h-[500px] bg-background border border-border rounded-lg flex items-center justify-center shadow-sm">
                       <div className="text-center animate-fade-in">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                           <Loader2 className="h-6 w-6 animate-spin text-primary" />
                         </div>
                         <p className="text-muted-foreground">Loading interactive chart...</p>
                       </div>
                     </div>
                   ) : ohlcData.length > 0 ? (
-                    <InteractiveChart
-                      data={ohlcData}
-                      stats={stockStats}
-                      symbol={selectedCompany.symbol}
-                      chartType={chartType}
-                      timeframe={selectedTimeframe}
-                      loading={chartLoading}
-                      prediction={prediction}
-                      onPredictClick={handlePredictClick}
-                      predictionLoading={predictionLoading}
-                    />
+                    <div className="bg-background border border-border rounded-lg shadow-sm">
+                      <InteractiveChart
+                        data={ohlcData}
+                        stats={stockStats}
+                        symbol={selectedCompany.symbol}
+                        chartType={chartType}
+                        timeframe={selectedTimeframe}
+                        loading={chartLoading}
+                        prediction={prediction}
+                        onPredictClick={handlePredictClick}
+                        predictionLoading={predictionLoading}
+                      />
+                    </div>
                   ) : dataLoading ? (
-                    <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">
+                    <div className="h-96 bg-background border border-border rounded-lg flex items-center justify-center shadow-sm">
                       <div className="text-center animate-fade-in">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                           <Loader2 className="h-6 w-6 animate-spin text-primary" />
                         </div>
                         <p className="text-muted-foreground">Loading premium chart data...</p>
                       </div>
                     </div>
                   ) : selectedStockData.length > 0 ? (
-                    <StockChart
-                      symbol={selectedCompany.symbol}
-                      name={selectedCompany.name}
-                      data={selectedStockData}
-                    />
+                    <div className="bg-background border border-border rounded-lg shadow-sm">
+                      <StockChart
+                        symbol={selectedCompany.symbol}
+                        name={selectedCompany.name}
+                        data={selectedStockData}
+                      />
+                    </div>
                   ) : (
-                    <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">
+                    <div className="h-96 bg-background border border-border rounded-lg flex items-center justify-center shadow-sm">
                       <div className="text-center animate-fade-in">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center mx-auto mb-4">
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                           <span className="text-xl">📈</span>
                         </div>
                         <p className="text-muted-foreground mb-4">No stock data available for {selectedCompany.symbol}</p>
@@ -685,7 +689,7 @@ const Index = () => {
                           onClick={seedStockData} 
                           disabled={seeding} 
                           size="sm"
-                          className="bg-gradient-to-r from-primary to-primary/90"
+                          className="bg-primary hover:bg-primary/90"
                         >
                           {seeding ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -699,23 +703,28 @@ const Index = () => {
                   )}
                 </div>
 
-                {/* Stats Section */}
-                <div className="xl:col-span-1 animate-fade-in" style={{ animationDelay: "300ms" }}>
-                  <StockStats data={selectedStockData} />
+                {/* Stat Tiles Section */}
+                <div className="animate-fade-in" style={{ animationDelay: "300ms" }}>
+                  <StockStatTiles
+                    stats={stockStats}
+                    volumeData={ohlcData}
+                    loading={statsLoading}
+                    symbol={selectedCompany?.symbol}
+                  />
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card animate-fade-in">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">👆</span>
+            ) : (
+              <div className="h-96 bg-background border border-border rounded-lg flex items-center justify-center shadow-sm animate-fade-in">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">👆</span>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">Select a Company</h3>
+                  <p className="text-muted-foreground">Choose a company from the sidebar to view analytics</p>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Select a Company</h3>
-                <p className="text-muted-foreground">Choose a company from the sidebar to view premium analytics</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
