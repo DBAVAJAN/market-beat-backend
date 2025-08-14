@@ -42,6 +42,15 @@ interface StockStats {
   asOf: string;
 }
 
+interface PredictionData {
+  symbol: string;
+  predictionDate: string;
+  predictedClose: number;
+  lower: number;
+  upper: number;
+  model: string;
+}
+
 interface CompanyWithData {
   company: Company;
   data: StockData[];
@@ -71,6 +80,10 @@ const Index = () => {
   const [stockStats, setStockStats] = useState<StockStats | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
+  
+  // Prediction states
+  const [prediction, setPrediction] = useState<PredictionData | null>(null);
+  const [predictionLoading, setPredictionLoading] = useState(false);
   
   const { toast } = useToast();
 
@@ -168,6 +181,41 @@ const Index = () => {
       });
     } finally {
       setStatsLoading(false);
+    }
+  };
+
+  const fetchPrediction = async (symbol: string) => {
+    setPredictionLoading(true);
+    try {
+      const response = await fetch(`https://jzkdpoaxesfggreojydu.supabase.co/functions/v1/api-predict/${symbol}`, {
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6a2Rwb2F4ZXNmZ2dyZW9qeWR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNTYyOTMsImV4cCI6MjA3MDczMjI5M30.2CDAVcEJc4WNrd2ucoMr9OJQ9AOqT-AcSQlEUFSa5ZM`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch prediction: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setPrediction(result);
+      
+      toast({
+        title: "Prediction Generated",
+        description: `Next day prediction: ₹${result.predictedClose.toFixed(2)}`,
+      });
+      
+    } catch (error) {
+      console.error("Error fetching prediction:", error);
+      setPrediction(null);
+      toast({
+        title: "Prediction Error",
+        description: "Failed to generate prediction.",
+        variant: "destructive",
+      });
+    } finally {
+      setPredictionLoading(false);
     }
   };
 
@@ -346,11 +394,20 @@ const Index = () => {
       fetchStockStatsData(company.symbol)
     ]);
     
+    // Clear previous prediction when changing company
+    setPrediction(null);
+    
     // Close sidebar on mobile after selection
     if (window.innerWidth < 1024) {
       setSidebarCollapsed(true);
     }
   };
+
+  const handlePredictClick = useCallback(async () => {
+    if (selectedCompany) {
+      await fetchPrediction(selectedCompany.symbol);
+    }
+  }, [selectedCompany]);
 
   const handleMenuToggle = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -597,6 +654,9 @@ const Index = () => {
                       chartType={chartType}
                       timeframe={selectedTimeframe}
                       loading={chartLoading}
+                      prediction={prediction}
+                      onPredictClick={handlePredictClick}
+                      predictionLoading={predictionLoading}
                     />
                   ) : dataLoading ? (
                     <div className="h-96 bg-gradient-card border rounded-xl flex items-center justify-center shadow-card">

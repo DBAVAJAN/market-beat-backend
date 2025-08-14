@@ -18,6 +18,15 @@ interface StockStats {
   asOf: string
 }
 
+interface PredictionData {
+  symbol: string
+  predictionDate: string
+  predictedClose: number
+  lower: number
+  upper: number
+  model: string
+}
+
 interface InteractiveChartProps {
   data: OHLCData[]
   stats: StockStats | null
@@ -25,6 +34,9 @@ interface InteractiveChartProps {
   chartType: 'line' | 'candlestick'
   timeframe: string
   loading?: boolean
+  prediction: PredictionData | null
+  onPredictClick: () => void
+  predictionLoading: boolean
 }
 
 export function InteractiveChart({ 
@@ -33,7 +45,10 @@ export function InteractiveChart({
   symbol, 
   chartType, 
   timeframe,
-  loading = false 
+  loading = false,
+  prediction,
+  onPredictClick,
+  predictionLoading
 }: InteractiveChartProps) {
   if (loading || !data || data.length === 0) {
     return <ChartSkeleton />
@@ -120,6 +135,72 @@ export function InteractiveChart({
       })
     }
 
+    // Add prediction traces if available
+    if (prediction && data.length > 0) {
+      const lastDataPoint = data[data.length - 1]
+      const predictionDates = [lastDataPoint.t, prediction.predictionDate]
+      const predictionPrices = [lastDataPoint.c, prediction.predictedClose]
+
+      // Prediction line (dotted)
+      mainTraces.push({
+        type: 'scatter',
+        mode: 'lines+markers',
+        x: predictionDates,
+        y: predictionPrices,
+        name: 'Prediction',
+        line: { 
+          color: 'rgb(168, 85, 247)', 
+          width: 2, 
+          dash: 'dot' 
+        },
+        marker: {
+          color: 'rgb(168, 85, 247)',
+          size: 8,
+          symbol: 'star'
+        },
+        hovertemplate: 'Predicted: ₹%{y:,.2f}<br>Date: %{x}<extra></extra>',
+        showlegend: true
+      })
+
+      // Confidence band (filled area)
+      mainTraces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: [prediction.predictionDate, prediction.predictionDate],
+        y: [prediction.lower, prediction.upper],
+        fill: 'tonexty',
+        fillcolor: 'rgba(168, 85, 247, 0.2)',
+        line: { color: 'rgba(168, 85, 247, 0.4)', width: 1 },
+        name: 'Confidence Band',
+        hovertemplate: 'Range: ₹%{y:,.2f}<extra></extra>',
+        showlegend: false
+      })
+
+      // Upper bound line
+      mainTraces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: [prediction.predictionDate],
+        y: [prediction.upper],
+        line: { color: 'rgba(168, 85, 247, 0.6)', width: 1, dash: 'dash' },
+        name: 'Upper Bound',
+        hovertemplate: 'Upper: ₹%{y:,.2f}<extra></extra>',
+        showlegend: false
+      })
+
+      // Lower bound line  
+      mainTraces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: [prediction.predictionDate],
+        y: [prediction.lower],
+        line: { color: 'rgba(168, 85, 247, 0.6)', width: 1, dash: 'dash' },
+        name: 'Lower Bound',
+        hovertemplate: 'Lower: ₹%{y:,.2f}<extra></extra>',
+        showlegend: false
+      })
+    }
+
     const volumeTrace = {
       type: 'bar',
       x: dates,
@@ -185,7 +266,35 @@ export function InteractiveChart({
   const allTraces = [...mainTraces, volumeTrace]
 
   return (
-    <div className="w-full animate-fade-in">
+    <div className="w-full animate-fade-in space-y-4">
+      {/* Prediction Button and Badge */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onPredictClick}
+          disabled={predictionLoading || !data || data.length === 0}
+          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+        >
+          {predictionLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+              Predicting...
+            </>
+          ) : (
+            <>
+              <span className="mr-2">🔮</span>
+              Predict Next Day
+            </>
+          )}
+        </button>
+        
+        {prediction && (
+          <div className="text-sm bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-lg">
+            <span className="font-medium">Model:</span> {prediction.model} • 
+            <span className="font-medium ml-2">Next:</span> ₹{prediction.predictedClose.toFixed(2)}
+          </div>
+        )}
+      </div>
+
       <Plot
         data={allTraces}
         layout={layout}
