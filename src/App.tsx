@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from "@/components/AuthContext";
 import Index from "./pages/Index";
 import { AuthPage } from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -32,15 +31,7 @@ const AppContent = () => {
     <Routes>
       <Route 
         path="/" 
-        element={
-          user ? (
-            <ProtectedRoute>
-              <Index />
-            </ProtectedRoute>
-          ) : (
-            <AuthPage />
-          )
-        } 
+        element={user ? <Index /> : <AuthPage />} 
       />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="*" element={<NotFound />} />

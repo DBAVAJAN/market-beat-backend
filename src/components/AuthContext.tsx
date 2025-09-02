@@ -1,23 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Profile {
+interface User {
   id: string;
-  user_id: string;
-  display_name: string | null;
-  email: string | null;
-  phone: string | null;
+  username: string;
+  created_at?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
-  profile: Profile | null;
-  signUp: (email: string, password: string, phone: string, displayName: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (username: string, password: string, confirmPassword: string) => Promise<{ error: any }>;
+  signIn: (username: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
-  verifyOTP: (phone: string, token: string) => Promise<{ error: any }>;
   loading: boolean;
 }
 
@@ -25,114 +19,87 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer profile fetch to avoid deadlock
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
+    // Check for existing user in localStorage
+    const storedUser = localStorage.getItem('auth-user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        localStorage.removeItem('auth-user');
       }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const signUp = async (username: string, password: string, confirmPassword: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
+      if (password !== confirmPassword) {
+        return { error: { message: 'Passwords do not match' } };
       }
 
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
+      if (username.trim().length < 3) {
+        return { error: { message: 'Username must be at least 3 characters' } };
+      }
 
-  const signUp = async (email: string, password: string, phone: string, displayName: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        phone,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            display_name: displayName,
-            phone: phone
-          }
+      if (password.length < 6) {
+        return { error: { message: 'Password must be at least 6 characters' } };
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{ username: username.trim(), password }])
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') { // unique_violation
+          return { error: { message: 'Username already taken' } };
         }
-      });
+        return { error };
+      }
 
-      return { error };
+      return { error: null };
     } catch (error) {
       return { error };
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username.trim())
+        .eq('password', password)
+        .single();
 
-      return { error };
+      if (error || !data) {
+        return { error: { message: 'Invalid username or password' } };
+      }
+
+      const userData: User = {
+        id: data.id,
+        username: data.username,
+        created_at: data.created_at
+      };
+
+      setUser(userData);
+      localStorage.setItem('auth-user', JSON.stringify(userData));
+
+      return { error: null };
     } catch (error) {
-      return { error };
+      return { error: { message: 'Invalid username or password' } };
     }
   };
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      return { error };
-    } catch (error) {
-      return { error };
-    }
-  };
-
-  const verifyOTP = async (phone: string, token: string) => {
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone,
-        token,
-        type: 'sms'
-      });
-
-      return { error };
+      setUser(null);
+      localStorage.removeItem('auth-user');
+      return { error: null };
     } catch (error) {
       return { error };
     }
@@ -140,12 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
-    session,
-    profile,
     signUp,
     signIn,
     signOut,
-    verifyOTP,
     loading
   };
 

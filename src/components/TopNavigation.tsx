@@ -20,7 +20,7 @@ export function TopNavigation({
   onSearchChange 
 }: TopNavigationProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const { user, profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleAuthAction = async () => {
@@ -86,7 +86,7 @@ export function TopNavigation({
               size="sm"
               className="text-primary-foreground hover:bg-primary-foreground/10 hidden sm:flex"
             >
-              <span className="text-sm">Welcome {profile?.display_name || user.email}!</span>
+              <span className="text-sm">Welcome {user.username}!</span>
             </Button>
           )}
           
