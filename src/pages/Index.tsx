@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { StockChart } from "@/components/StockChart";
@@ -514,8 +513,7 @@ const Index = () => {
   }
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       {/* Cache Data Banner */}
       {isShowingCachedData && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 animate-fade-in">
@@ -743,7 +741,6 @@ const Index = () => {
         </div>
       </div>
       </div>
-    </ProtectedRoute>
   );
 };
 
