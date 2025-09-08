@@ -166,7 +166,7 @@ export function AuthPage() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full sm:max-w-md mx-auto px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg" 
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -175,7 +175,7 @@ export function AuthPage() {
                       Signing in...
                     </>
                   ) : (
-                    'Sign In'
+                    'Login'
                   )}
                 </Button>
               </form>
@@ -241,7 +241,7 @@ export function AuthPage() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full sm:max-w-md mx-auto px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg" 
                   disabled={isLoading}
                 >
                   {isLoading ? (
