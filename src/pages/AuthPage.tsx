@@ -120,7 +120,7 @@ export function AuthPage() {
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="login" className="space-y-4">
+            <TabsContent value="login" className="mt-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-username">Username</Label>
@@ -166,7 +166,7 @@ export function AuthPage() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full sm:max-w-md mx-auto px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg" 
+                  className="w-full" 
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -181,7 +181,7 @@ export function AuthPage() {
               </form>
             </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4">
+            <TabsContent value="signup" className="mt-4">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-username">Username</Label>
@@ -241,7 +241,7 @@ export function AuthPage() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full sm:max-w-md mx-auto px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg" 
+                  className="w-full" 
                   disabled={isLoading}
                 >
                   {isLoading ? (
