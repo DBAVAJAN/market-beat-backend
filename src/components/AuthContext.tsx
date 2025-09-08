@@ -40,25 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: { message: 'Passwords do not match' } };
       }
 
-      if (username.trim().length < 3) {
-        return { error: { message: 'Username must be at least 3 characters' } };
-      }
-
-      if (password.length < 6) {
-        return { error: { message: 'Password must be at least 6 characters' } };
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .insert([{ username: username.trim(), password }])
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('auth-custom', {
+        body: {
+          action: 'signup',
+          username,
+          password
+        }
+      });
 
       if (error) {
-        if (error.code === '23505') { // unique_violation
-          return { error: { message: 'Username already taken' } };
-        }
         return { error };
+      }
+
+      if (data?.error) {
+        return { error: data.error };
       }
 
       return { error: null };
@@ -69,21 +64,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (username: string, password: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username.trim())
-        .eq('password', password)
-        .single();
+      const { data, error } = await supabase.functions.invoke('auth-custom', {
+        body: {
+          action: 'signin',
+          username,
+          password
+        }
+      });
 
-      if (error || !data) {
+      if (error) {
+        return { error: { message: 'Invalid username or password' } };
+      }
+
+      if (data?.error) {
+        return { error: data.error };
+      }
+
+      if (!data?.user) {
         return { error: { message: 'Invalid username or password' } };
       }
 
       const userData: User = {
-        id: data.id,
-        username: data.username,
-        created_at: data.created_at
+        id: data.user.id,
+        username: data.user.username,
+        created_at: data.user.created_at
       };
 
       setUser(userData);
